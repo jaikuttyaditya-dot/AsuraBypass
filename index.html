@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CENZ — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #0a0a0b; --bg-sidebar: #0d0d0f; --bg-card: #151518; --bg-input: #09090b; --border: rgba(255, 255, 255, 0.08); --accent: #c6f24e; --text-main: #f4f4f6; --text-muted: #9f9fa8; --text-dim: #656570; --font-heading: 'Space Grotesk', sans-serif; --font-body: 'Inter', sans-serif; --font-mono: 'JetBrains Mono', monospace; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: var(--bg); color: var(--text-main); font-family: var(--font-body); display: flex; height: 100vh; overflow: hidden; font-size: 14px; }
+    .sidebar { width: 260px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 16px; flex-shrink: 0; }
+    .logo { font-family: var(--font-heading); font-size: 20px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; margin-bottom: 32px; padding-left: 8px; letter-spacing: -0.04em; }
+    .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; color: var(--text-muted); cursor: pointer; font-weight: 500; transition: all 0.2s ease; margin-bottom: 4px; user-select: none; }
+    .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.04); color: var(--text-main); }
+    .nav-item.active { background: rgba(198, 242, 78, 0.1); color: var(--accent); }
+    .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
+    .topbar { height: 72px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; background: rgba(10, 10, 11, 0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 10; }
+    .page-title { font-family: var(--font-heading); font-size: 20px; font-weight: 600; }
+    .content-area { padding: 32px; max-width: 1000px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 24px; }
+    .panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+    .panel-title { font-family: var(--font-heading); font-size: 16px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; font-family: var(--font-mono); color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    input, select { width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: #fff; font-family: var(--font-mono); font-size: 14px; outline: none; transition: all 0.2s ease; }
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(198, 242, 78, 0.1); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 12px 24px; font-weight: 700; font-family: var(--font-heading); cursor: pointer; transition: all 0.2s ease; font-size: 14px; }
+    .btn:hover { background: #d4f76c; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(198, 242, 78, 0.2); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-secondary { background: rgba(255, 255, 255, 0.06); color: #fff; border: 1px solid var(--border); }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; letter-spacing: 0.04em; }
+    .status-connected { background: rgba(198, 242, 78, 0.12); color: var(--accent); border: 1px solid rgba(198, 242, 78, 0.3); }
+    .status-disconnected { background: rgba(244, 63, 94, 0.12); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .video-preview { display: none; gap: 16px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 16px; align-items: center; }
+    .video-preview img { width: 140px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+    .video-info h4 { font-size: 15px; margin-bottom: 4px; color: #fff; }
+    .video-info p { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .progress-track { height: 4px; background: rgba(255, 255, 255, 0.06); border-radius: 4px; overflow: hidden; margin-top: 16px; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #7c5cff 0%, var(--accent) 100%); width: 0%; transition: width 0.4s ease; }
+    .terminal { background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--font-mono); font-size: 12px; color: #a1a1aa; height: 150px; overflow-y: auto; margin-top: 16px; }
+    .terminal-line { margin-bottom: 4px; }
+    .terminal-line.success { color: var(--accent); }
+    .terminal-line.error { color: #fb7185; }
+    .terminal-line.info { color: #60a5fa; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="logo"><span>CENZ</span><div class="logo-dot"></div></div>
+    <div class="nav-item active"><span>Dashboard</span></div>
+    <div class="nav-item"><span>Upload</span></div>
+    <div class="nav-item"><span>API Keys</span></div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="page-title">Audio Pipeline</div>
+      <div id="keyStatusDisplay"><span class="status-badge status-disconnected"><span class="dot-red"></span> KEY UNLINKED</span></div>
+    </header>
+    <div class="content-area">
+      <div class="panel">
+        <div class="panel-title">Roblox Open Cloud Key</div>
+        <div style="display: flex; gap: 12px; align-items: flex-end;">
+          <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <label class="form-label">Group / User API Key</label>
+            <input type="password" id="apiKeyInput" placeholder="Paste your Open Cloud API key here...">
+          </div>
+          <button class="btn" id="saveKeyBtn">Link Key</button>
+        </div>
+        <div id="keyFeedback" style="font-size: 13px; font-family: var(--font-mono); margin-top: 12px; display: none;"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Convert & Upload</div>
+        <div class="form-group">
+          <label class="form-label">YouTube or SoundCloud Link</label>
+          <div style="display: flex; gap: 12px;">
+            <input type="text" id="videoUrl" placeholder="https://youtube.com/watch?v=..." style="flex: 1;">
+            <button class="btn btn-secondary" id="fetchBtn">Fetch Info</button>
+          </div>
+        </div>
+        <div class="video-preview" id="videoPreview">
+          <img id="previewThumb" src="" alt="Thumbnail">
+          <div class="video-info">
+            <h4 id="previewTitle">Loading...</h4>
+            <p id="previewDuration">--:--</p>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top: 16px;">
+          <div class="form-group">
+            <label class="form-label">Target Type</label>
+            <select id="targetType">
+              <option value="group">Group ID (Group Assets)</option>
+              <option value="user">User ID (Personal Assets)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Target ID</label>
+            <input type="text" id="targetId" placeholder="e.g. 190569105">
+          </div>
+        </div>
+        <button class="btn" id="startBtn" style="width: 100%; margin-top: 8px;">Start Pipeline</button>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="terminal" id="terminalLog"><div class="terminal-line info">System ready.</div></div>
+      </div>
+    </div>
+  </main>
+  <script>
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const saveKeyBtn = document.getElementById('saveKeyBtn');
+    const keyStatusDisplay = document.getElementById('keyStatusDisplay');
+    const keyFeedback = document.getElementById('keyFeedback');
+    const videoUrl = document.getElementById('videoUrl');
+    const fetchBtn = document.getElementById('fetchBtn');
+    const videoPreview = document.getElementById('videoPreview');
+    const previewThumb = document.getElementById('previewThumb');
+    const previewTitle = document.getElementById('previewTitle');
+    const startBtn = document.getElementById('startBtn');
+    const targetId = document.getElementById('targetId');
+    const targetType = document.getElementById('targetType');
+    const progressFill = document.getElementById('progressFill');
+    const terminalLog = document.getElementById('terminalLog');
+
+    saveKeyBtn.addEventListener('click', async () => {
+        const key = apiKeyInput.value.trim();
+        if (!key) return;
+        try {
+            await fetch('/api/key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey: key }) });
+            keyStatusDisplay.innerHTML = `<span class="status-badge status-connected"><span class="dot-green"></span> KEY LINKED</span>`;
+            keyFeedback.style.display = 'block';
+            keyFeedback.style.color = 'var(--accent)';
+            keyFeedback.textContent = '✓ Key saved to server.';
+            apiKeyInput.value = '••••••••••••••';
+        } catch (e) {
+            keyFeedback.style.display = 'block';
+            keyFeedback.style.color = '#fb7185';
+            keyFeedback.textContent = '✗ Failed to link key.';
+        }
+    });
+
+    fetchBtn.addEventListener('click', async () => {
+        const url = videoUrl.value.trim();
+        if (!url) return;
+        fetchBtn.disabled = true;
+        fetchBtn.textContent = 'Fetching...';
+        try {
+            const res = await fetch(`https://www.youtube.com/oembed?url=${url}&format=json`);
+            const data = await res.json();
+            previewThumb.src = data.thumbnail_url;
+            previewTitle.textContent = data.title;
+            videoPreview.style.display = 'flex';
+            appendLog('Video metadata fetched.', 'info');
+        } catch (e) {
+            appendLog('Failed to fetch video info.', 'error');
+        } finally {
+            fetchBtn.disabled = false;
+            fetchBtn.textContent = 'Fetch Info';
+        }
+    });
+
+    startBtn.addEventListener('click', async () => {
+        const url = videoUrl.value.trim();
+        const tId = targetId.value.trim();
+        if (!url || !tId) return appendLog('URL and Target ID required.', 'error');
+
+        startBtn.disabled = true;
+        startBtn.textContent = 'Processing...';
+        progressFill.style.width = '0%';
+        terminalLog.innerHTML = '';
+
+        try {
+            const response = await fetch('/api/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, targetType: targetType.value, targetId: tId })
+            });
+
+            if (!response.ok) throw new Error('Server error');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n\n').filter(Boolean);
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = JSON.parse(line.slice(6));
+                        if (data.step === 'download' && data.status === 'active') appendLog('1/4 Downloading...', 'info'), progressFill.style.width = '25%';
+                        if (data.step === 'convert' && data.status === 'active') appendLog('2/4 Converting...', 'info'), progressFill.style.width = '50%';
+                        if (data.step === 'upload' && data.status === 'active') appendLog('3/4 Uploading...', 'info'), progressFill.style.width = '75%';
+                        if (data.step === 'moderation' && data.status === 'complete') {
+                            appendLog(`4/4 Done! Asset ID: ${data.assetId}`, 'success');
+                            progressFill.style.width = '100%';
+                            startBtn.disabled = false;
+                            startBtn.textContent = 'Start Pipeline';
+                        }
+                        if (data.step === 'error') {
+                            appendLog(data.message, 'error');
+                            startBtn.disabled = false;
+                            startBtn.textContent = 'Start Pipeline';
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            appendLog('Connection failed.', 'error');
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start Pipeline';
+        }
+    });
+
+    function appendLog(msg, type) {
+        const el = document.createElement('div');
+        el.className = `terminal-line ${type}`;
+        el.textContent = `> ${msg}`;
+        terminalLog.appendChild(el);
+        terminalLog.scrollTop = terminalLog.scrollHeight;
+    }
+  </script>
+</body>
+</html>
